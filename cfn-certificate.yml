@@ -1,0 +1,37 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Serverless Pizza Infrastructure
+
+Parameters:
+  Environment:
+    Description: The environment
+    Type: String
+  HostedZoneId:
+    Description: The hosted zone ID
+    Type: 'AWS::SSM::Parameter::Value<String>'
+    Default: '/hosted_zone_id'
+Mappings:
+  EnvironmentMap:
+    dev:
+      TopLevelDomainName: "dev.serverlesspizza.com"
+      CertificateDomainName: "*.dev.serverlesspizza.com"
+    prod:
+      TopLevelDomainName: "serverlesspizza.com"
+      CertificateDomainName: "*.serverlesspizza.com"
+
+Resources:
+  CertificateArn:
+    Type: AWS::CertificateManager::Certificate
+    Properties: 
+      DomainName: !FindInMap [EnvironmentMap, !Ref Environment, CertificateDomainName]
+      SubjectAlternativeNames: 
+        - !FindInMap [EnvironmentMap, !Ref Environment, TopLevelDomainName]
+      DomainValidationOptions:
+            - DomainName: !FindInMap [EnvironmentMap, !Ref Environment, CertificateDomainName]
+              HostedZoneId: !Ref HostedZoneId
+      ValidationMethod: DNS
+
+Outputs:
+  CertificateArn:
+    Value: !Ref CertificateArn
+    Export:
+      Name: CertificateArn
